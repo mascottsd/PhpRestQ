@@ -1,4 +1,6 @@
 <?
+require_once("common_db.php"); //DB_Connect & SQL helper functions
+
 //All URLS have /jobs/ in them... ie. localhost/jobs/...
 $url_elements = explode('/', $_SERVER['REQUEST_URI']); //PATH_INFO
 $jobsIdx = -1;
@@ -54,7 +56,7 @@ case 'POST':
 		echo "Por favor, post a url amigo"; //URL should pass in ar url as {'url': 'www.google.com'} or in the URL itself /jobs/www.google.com
 		
 	} else {
-		require_once("common_db.php"); //Connect to the DB
+		DB_Connect();
 		mysql_query("CREATE TABLE IF NOT EXISTS $dbTbl (
 			id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
 			url varchar(1024) NOT NULL,
@@ -80,7 +82,7 @@ case 'PUT': //This doesn't really need to be exposed
 	if ( empty($jobId) ) {
 		echo "Please give us a job id to update"; //URL should be /jobs/123
 	} else {
-		require_once("common_db.php"); //Connect to the DB
+		DB_Connect();
 		$data = parseIncomingParams();
 		$data['updated_at'] = Date("Y-m-d H:i:s",time()); //'GETDATE()';
 		$sqlTxt = GetUpdateSQL($dbTbl, $data, "id = $jobId");
@@ -95,7 +97,7 @@ case 'GET':
 		break;
 	}
 	//Database request...
-	require_once("common_db.php"); //Connect to the DB
+	DB_Connect();
 	$sqlTxt = "SELECT * FROM $dbTbl";
 	if ( !empty($jobId) ) $sqlTxt .= " WHERE id=$jobId";
 	$res = mysql_query($sqlTxt);
@@ -116,7 +118,7 @@ case 'GET':
 	break;
 	
 case 'DELETE':
-	require_once("common_db.php"); //Connect to the DB
+	DB_Connect();
 	$sqlTxt = "DELETE FROM $dbTbl WHERE id=$id";
 	$ok = mysql_query($sqlTxt);
 	break;
