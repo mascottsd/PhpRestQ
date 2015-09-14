@@ -1,5 +1,5 @@
 <?
-//IF GET, DELETE, PUT... find the id in the url
+//All URLS have /jobs/ in them... ie. localhost/jobs/...
 $url_elements = explode('/', $_SERVER['REQUEST_URI']); //PATH_INFO
 $jobsIdx = -1;
 for ($i=0; isset($url_elements[$i]); $i++) {
@@ -7,14 +7,22 @@ for ($i=0; isset($url_elements[$i]); $i++) {
 		$jobsIdx = $i;
 }
 if ($jobsIdx == -1) {
+	//Provide a form to add the URLs...
 	//echo "Invalid url: should have '/jobs' in the address";
-	echo "<form method='POST' action='jobs'> URL <input name='url' /> <input type='submit' /></form>";
+	echo "<div width='100%' style='color: #fff; background-color: #008; padding:10px; font-size:24px'> URL Fetcher </div>";
+	echo "<BR><form method='POST' action='jobs'> URL <input name='url' /> <input type='submit' /></form>";
 	exit;
 }
-//Get the ID if it as passed in the URL
-$jobId = '';
-if (isset($url_elements[$jobsIdx+1]))
+//Get the ID if it as passed in the URL (GET, DELETE, PUT)
+$jobParam = '';
+if (isset($url_elements[$jobsIdx+1])) {
 	$jobId = $url_elements[$jobsIdx+1] + 0;
+	//In case they passed in a url within the url, put it back together (ie. /jobs/url/that/is/long)
+	for ($i=$jobsIdx+1; isset($url_elements[$i]); $i++) {
+		if ($jobParam) $jobParam .= '/';
+		$jobParam .= $url_elements[$i];
+	}
+}
 
 
 //GET THE METHOD FOR ROUTING
@@ -32,14 +40,18 @@ if ($method == 'POST' && array_key_exists('HTTP_X_HTTP_METHOD', $_SERVER)) {
 //curl -v -X POST http://localhost/MassDrop/RestJobQ/jobs -d '{"url":"google.com" }
 
 //ROUTE THE REQUEST TO THE RIGHT PLACE
-//echo "METHOD: $method<BR>";
 $dbTbl = 'tbl_jobs';
 switch($method) {
 case 'POST':
 	//Database insert...
 	$data = parseIncomingParams();
+	if ( empty($data['url']) )
+		$data['url'] = $jobParam;
+	
+	// <URL ERROR CHECKING HERE IF NECESSARY>
+	
 	if ( empty($data['url']) ) {
-		echo "Por favor, post a url amigo";
+		echo "Por favor, post a url amigo"; //URL should pass in ar url as {'url': 'www.google.com'} or in the URL itself /jobs/www.google.com
 		
 	} else {
 		require_once("common_db.php"); //Connect to the DB
@@ -49,8 +61,13 @@ case 'POST':
 			html text,
 			created_at datetime,
 			updated_at datetime)");
-	
-		$sqlTxt = "INSERT INTO $dbTbl (url) VALUES (\"". $data['url'] ."\")";
+		
+		//Add the URL to the job queue
+		$upData['url'] = $data['url'];
+		$upData['html'] = 'NOT DONE YET';
+		$upData['updated_at'] = Date("Y-m-d H:i:s",time()); //'GETDATE()';
+		$upData['created_at'] = $upData['updated_at'];
+		$sqlTxt = GetInsertSQL($dbTbl, $upData); //"INSERT INTO $dbTbl (url) VALUES (\"". $data['url'] ."\")";
 		$ok = mysql_query($sqlTxt);
 		$jobId = $ok ? GetLastInsertId() : 0;
 		header("HTTP/1.1 201 Created job #$jobId");
@@ -58,23 +75,29 @@ case 'POST':
 	}
 	break;
 	
-case 'PUT':
+case 'PUT': //This doesn't really need to be exposed
+	//Database update...
 	if ( empty($jobId) ) {
-		echo "Please give us a job id to update";
+		echo "Please give us a job id to update"; //URL should be /jobs/123
 	} else {
-		//Database update...
 		require_once("common_db.php"); //Connect to the DB
-		$sqlTxt = GetUpdateSQL($dbTbl, $data, "ID = $jobId");
+		$data = parseIncomingParams();
+		$data['updated_at'] = Date("Y-m-d H:i:s",time()); //'GETDATE()';
+		$sqlTxt = GetUpdateSQL($dbTbl, $data, "id = $jobId");
 		$ok = mysql_query($sqlTxt);
 		header('HTTP/1.1 201 Updated - the request was successful');
 	}
 	break;
 	
 case 'GET':
+	if ( empty($jobId) ) {
+		echo "URL should be .../jobs/id";
+		break;
+	}
 	//Database request...
 	require_once("common_db.php"); //Connect to the DB
 	$sqlTxt = "SELECT * FROM $dbTbl";
-	if ($jobId) $sqlTxt .= " WHERE ID=$jobId";
+	if ( !empty($jobId) ) $sqlTxt .= " WHERE id=$jobId";
 	$res = mysql_query($sqlTxt);
 	if (!$res) {
 		echo $jobId ? "[Job $jobId not found]" : "No jobs found";
@@ -104,7 +127,7 @@ default:
 }
 
 
-//------ parseIncomingParams
+//------ parseIncomingParams - put the incoming data in an object
 function parseIncomingParams() {
 	$parameters = array();
 

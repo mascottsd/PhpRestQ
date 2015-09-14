@@ -9,20 +9,9 @@ function GetLastInsertId() {
 	return mysql_insert_id($DB_CONN);
 }
 
-
-/*------ GetUpdateSQL - like an implode for associative arrays */
-function GetUpdateSQL($dbTbl, $data, $where='')
-{
-	$setTxt = '';
-	foreach ($data as $key => $val) {
-		if ($setTxt) $setTxt .= ', ';
-		$setTxt .= "$key=";
-		$setTxt .= GetSQLToken($val);
-	}
-	$whereTxt = $where ? "WHERE $where" : '';
-	return "UPDATE $dbTbl SET ($setTxt) $whereTxt";
-}
-
+//-----------------------------------------------------------------------
+// SQL HELPER FUNCTIONS
+//-----------------------------------------------------------------------
 /*------ GetSQLToken - how the value should be passed in to SQL */
 function GetSQLToken($val)
 {
@@ -37,4 +26,51 @@ function GetSQLToken($val)
 	return $valTxt;
 }
 
+/*------ GetUpdateSQL
+/ Returns the SQL for an UPDATE with the given data
+/ Like an implode for associative arrays */
+function GetUpdateSQL($dbTbl, $data, $where='')
+{
+	$setTxt = '';
+	foreach ($data as $key => $val) {
+		if ($setTxt) $setTxt .= ', ';
+		$setTxt .= "$key=";
+		$setTxt .= GetSQLToken($val);
+	}
+	$whereTxt = $where ? "WHERE $where" : '';
+	return "UPDATE $dbTbl SET ($setTxt) $whereTxt";
+}
+
+/*------ GetInsertSQL
+/ Returns the SQL for an INSERT with the given data
+/ Like an implode for associative arrays */
+function GetInsertSQL($dbTbl, $data)
+{
+	$cols = "";
+	$valTxt = "";
+	if ( isset($data[0]) ) {
+		$rowTxt = "";
+		foreach ($data as $i => $row) {
+			$vals = '';
+			foreach ($row as $key => $val) {
+				if ( !$i ) $cols[] = $key;
+				//if ($valTxt != '') $valTxt .= ', ';
+				$vals[] = GetSQLToken( is_array($val) ? 'ArrayAsTxt' : $val );
+			}
+			$rowTxt[] = join(', ', $vals);
+		}
+		$valTxt = join('), (', $rowTxt);
+		
+	} else {
+		$vals = '';
+		foreach ($data as $key => $val) {
+			$cols[] = $key;
+			//if ($valTxt != '') $valTxt .= ', ';
+			$vals[] = GetSQLToken( is_array($val) ? 'ArrayAsTxt' : $val );
+		}
+		$valTxt = join(', ', $vals);
+	}
+	$colTxt = join(', ', $cols);
+	return "INSERT INTO $dbTbl ($colTxt) VALUES ($valTxt)";
+}
 ?>

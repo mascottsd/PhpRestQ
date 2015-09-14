@@ -10,7 +10,7 @@ require_once("common_db.php"); //Connect to the DB
 //------ GetNextJob - return the next job to be done
 //----------------------------------------------------------
 function GetNextJob() {
-	$res = mysql_query("SELECT * FROM tbl_jobs WHERE html IS NULL OR html = '' ORDER BY ID");
+	$res = mysql_query("SELECT * FROM tbl_jobs WHERE html IS NULL OR html = '' OR html = 'NOT DONE YET' ORDER BY ID");
 	return $res ? mysql_fetch_array($res) : '';
 }
 
@@ -24,11 +24,14 @@ function ScrapeJob($url) {
 }
 
 //----------------------------------------------------------
-//------ FinishJob - save the html for the job
+//------ FinishJob - save the html for the job to the database
 //----------------------------------------------------------
 function FinishJob($id, $html) {
  	$html = htmlentities($html);
-	$sqlTxt = "UPDATE tbl_jobs SET html=\"$html\" WHERE id=$id";
+	//Could use a PUT call to the API as instead...
+	$data['html'] = $html;
+	$data['updated_at'] = Date("Y-m-d H:i:s",time()); //'GETDATE()';
+	$sqlTxt = GetUpdateSQL('tbl_jobs', $data, "id = $id"); //"UPDATE tbl_jobs SET html=\"$html\" WHERE id=$id";
 	return mysql_query($sqlTxt);
 }
 
@@ -44,7 +47,7 @@ if ($job) {
 	$html = ScrapeJob( $job['url'] );
 	
 	//SAVE THE PAGE CONTENTS TO THE DATABASE
-	FinishJob($job['id'], $html ? $html : 'empty page');
+	FinishJob($job['id'], $html ? $html : '(EMPTY PAGE)');
 }
 //------------------------------------------------------------
 ?>
