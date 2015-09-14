@@ -7,10 +7,10 @@ Ask for the status of the job id via GET.
 
 
 URLS:
-POST http://localhost/jobs/     with the post data {'url': 'www.google.com'}
-GET http://localhost/jobs/id	to request the status, which is given as a JSON object {id:1, url:'text.com', html:'...'}
+POST /jobs/     with the post data {'url': 'www.google.com'}
+GET /jobs/id	to request the status, which is given as a JSON object {id:1, url:'text.com', html:'...'}
 				Where html will contain the status of the request or the HTML if completed.
-DELETE http://localhost/jobs/id	remove a job from the queue
+DELETE /jobs/id	remove a job from the queue
 
 
 SETUP:
@@ -22,5 +22,5 @@ SETUP:
 	AllowOverride All
 </Directory>
 
-2) The worker should be running in the background...
-http://localhost:88/work.php
+2) work.php should be running in the background to do the work...
+For example, in the browser open http://localhost:88/work.php
