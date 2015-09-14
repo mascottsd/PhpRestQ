@@ -74,6 +74,7 @@ case 'POST':
 		$jobId = $ok ? GetLastInsertId() : 0;
 		header("HTTP/1.1 201 Created job #$jobId");
 		echo $jobId;
+		exec('http://localhost:88/jobs/work.php');
 	}
 	break;
 	

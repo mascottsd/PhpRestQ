@@ -1,7 +1,13 @@
 <?
-$DB_CONN = mysql_connect('localhost', 'root', 'mypwd') or die("unable to mysql_connect to server");
-mysql_query("CREATE DATABASE IF NOT EXISTS awesome_db");
-mysql_query("USE awesome_db");
+
+$DB_CONN = '';
+//------ DB_Connect
+function DB_Connect() {
+	global $DB_CONN;
+	$DB_CONN = mysql_connect('localhost', 'root', 'mypwd') or die("unable to mysql_connect to server");
+	mysql_query("CREATE DATABASE IF NOT EXISTS awesome_db");
+	mysql_query("USE awesome_db");
+}
 
 //------ GetLastInsertId - call after an insert to get the id of the inserted row
 function GetLastInsertId() {
