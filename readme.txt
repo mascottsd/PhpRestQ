@@ -22,5 +22,8 @@ SETUP:
 	AllowOverride All
 </Directory>
 
-2) work.php should be running in the background to do the work...
-For example, in the browser open http://localhost:88/work.php
+2) PHP pthreads should be installed.  Downloadable from http://windows.php.net/downloads/pecl/releases/pthreads/
+	- phpInfo() should show Thread Safety enabled
+	- pthreadVC2.dll copied to the directory with php.exe
+	- php_pthreads.dll copied to php/ext directory
+		- php.ini should have "extension=php_pthreads.dll"
