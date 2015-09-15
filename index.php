@@ -74,7 +74,10 @@ case 'POST':
 		$jobId = $ok ? GetLastInsertId() : 0;
 		header("HTTP/1.1 201 Created job #$jobId");
 		echo $jobId;
-		exec('http://localhost:88/jobs/work.php');
+		$thread = new AsyncFetch( $jobId, $data['url'] );
+		$thread->start();
+		//if ($thread->start())
+		//	$thread->join();
 	}
 	break;
 	

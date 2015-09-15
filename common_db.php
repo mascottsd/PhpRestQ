@@ -16,6 +16,35 @@ function GetLastInsertId() {
 }
 
 //-----------------------------------------------------------------------
+// Worker Thread
+//-----------------------------------------------------------------------
+class AsyncFetch extends Thread {
+  public function __construct($jobId, $url){
+    $this->jobId = $jobId;
+    $this->url = $url;
+  }
+
+  public function run(){
+    if ($this->url){
+		//SCRAPE THE PAGE CONTENTS
+		$url = $this->url;
+		if (strpos($url, 'http') !== 0)
+			$url = "http://$url" ;
+		$html = file_get_contents($url);
+
+		DB_Connect();
+		//SAVE THE PAGE CONTENTS TO THE DATABASE
+		if ( !$html ) $html = '(EMPTY PAGE)';
+		//Could use a PUT call to the API instead...
+		$data['html'] = trim( htmlentities($html) ); //$data['html'] = str_replace('"', '&quot;', $html); //'\\\"'
+		$data['updated_at'] = Date("Y-m-d H:i:s",time()); //'GETDATE()';
+		$sqlTxt = GetUpdateSQL('tbl_jobs', $data, "id = ". $this->jobId); //"UPDATE tbl_jobs SET html=\"$html\" WHERE id=$id";
+		$ok = mysql_query($sqlTxt);
+	}
+  }
+}
+
+//-----------------------------------------------------------------------
 // SQL HELPER FUNCTIONS
 //-----------------------------------------------------------------------
 /*------ GetSQLToken - how the value should be passed in to SQL */
@@ -23,7 +52,7 @@ function GetSQLToken($val)
 {
 	$valTxt = $val;
 	if (is_string($val)) {
-		$valTxt = "'$val'";
+		$valTxt = "\"$val\"";
 	} else if (is_bool($val)) {
 		$valTxt = $val ? 1:0;
 	} else if (is_null($val)) {
@@ -44,7 +73,7 @@ function GetUpdateSQL($dbTbl, $data, $where='')
 		$setTxt .= GetSQLToken($val);
 	}
 	$whereTxt = $where ? "WHERE $where" : '';
-	return "UPDATE $dbTbl SET ($setTxt) $whereTxt";
+	return "UPDATE $dbTbl SET $setTxt $whereTxt";
 }
 
 /*------ GetInsertSQL
